@@ -9,17 +9,39 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class Lox {
+	private static final Interpreter interpreter = new Interpreter();
 	static boolean hadError = false;
+	static boolean hadRuntimeError = false;
+	static boolean printAst = false;
 
 	public static void main(String[] args) throws IOException {
-		if (args.length > 1) {
-			System.out.println("something");
-			System.exit(64);
-		} else if (args.length == 1) {
-			runFile(args[0]);
-		} else {
+		if (args.length == 0) {
 			runPrompt();
+			return;
 		}
+
+		if (args.length == 1) {
+			if (isAstFlag(args[0])) {
+				printAst = true;
+				runPrompt();
+			} else {
+				runFile(args[0]);
+			}
+			return;
+		}
+
+		if (args.length == 2 && isAstFlag(args[0])) {
+			printAst = true;
+			runFile(args[1]);
+			return;
+		}
+
+		System.out.println("Usage: jlox [--ast|-a] [script]");
+		System.exit(64);
+	}
+
+	private static boolean isAstFlag(String arg) {
+		return "--ast".equals(arg) || "-a".equals(arg);
 	}
 
 	private static void runFile(String path) throws IOException {
@@ -27,6 +49,7 @@ public class Lox {
 		run(new String(bytes, Charset.defaultCharset()));
 		
 		if (hadError) System.exit(65);
+		if (hadRuntimeError) System.exit(70);
 	}
 
 	private static void runPrompt() throws IOException {
@@ -39,6 +62,7 @@ public class Lox {
 			if (line == null) break;
 			run(line);
 			hadError = false;
+			hadRuntimeError = false;
 		}
 	}
 
@@ -49,13 +73,22 @@ public class Lox {
 		Expr expression = parser.parse();
 
 		if (hadError) return;
+		if (expression == null) return;
 
-		System.out.println(new AstPrinter().print(expression));
+		if (printAst) {
+			System.out.println(new AstPrinter().print(expression));
+		}
+		interpreter.interpret(expression);
 	}
 
 
 	static void error(int line, String message) {
 		report(line, "", message);
+	}
+
+	static void runtimeError(RuntimeError error) {
+		System.err.println(error.getMessage() + "\n[line " + error.token.line + "]");
+		hadRuntimeError = true;
 	}
 
 	private static void report(int line, String where, String message) {
