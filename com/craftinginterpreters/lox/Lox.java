@@ -70,15 +70,19 @@ public class Lox {
 		Scanner scanner = new Scanner(source);
 		List<Token> tokens = scanner.scanTokens();
 		Parser parser = new Parser(tokens);
-		Expr expression = parser.parse();
+		List<Stmt> statements = parser.parse();
 
 		if (hadError) return;
-		if (expression == null) return;
 
-		if (printAst) {
-			System.out.println(new AstPrinter().print(expression));
+		if (printAst && statements.size() == 1) {
+			Stmt stmt = statements.get(0);
+			if (stmt instanceof Stmt.Expression) {
+				System.out.println(new AstPrinter().print(((Stmt.Expression) stmt).expression));
+			} else if (stmt instanceof Stmt.Print) {
+				System.out.println(new AstPrinter().print(((Stmt.Print) stmt).expression));
+			}
 		}
-		interpreter.interpret(expression);
+		interpreter.interpret(statements);
 	}
 
 
