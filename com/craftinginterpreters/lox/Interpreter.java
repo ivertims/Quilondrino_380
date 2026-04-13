@@ -18,6 +18,7 @@ class Interpreter implements Expr.Visitor<Object>,
   }
 
   private void execute(Stmt stmt) {
+    if (stmt == null) return;
     stmt.accept(this);
   }
 
@@ -106,13 +107,13 @@ class Interpreter implements Expr.Visitor<Object>,
     }
   }
 
-  private Object evaluate(Expr expr) {
-    return expr.accept(this);
-  }
-
   @Override
   public Object visitVariableExpr(Expr.Variable expr) {
     return environment.get(expr.name);
+  }
+
+  private Object evaluate(Expr expr) {
+    return expr.accept(this);
   }
 
   @Override
@@ -125,6 +126,16 @@ class Interpreter implements Expr.Visitor<Object>,
   @Override
   public Void visitExpressionStmt(Stmt.Expression stmt) {
     evaluate(stmt.expression);
+    return null;
+  }
+
+  @Override
+  public Void visitIfStmt(Stmt.If stmt) {
+    if (isTruthy(evaluate(stmt.condition))) {
+      execute(stmt.thenBranch);
+    } else if (stmt.elseBranch != null) {
+      execute(stmt.elseBranch);
+    }
     return null;
   }
 
@@ -151,7 +162,6 @@ class Interpreter implements Expr.Visitor<Object>,
     executeBlock(stmt.statements, new Environment(environment));
     return null;
   }
-
   private void checkNumberOperand(Token operator, Object operand) {
     if (operand instanceof Double) return;
     throw new RuntimeError(operator, "Operand must be a number.");

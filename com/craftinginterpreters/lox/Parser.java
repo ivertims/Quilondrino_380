@@ -18,7 +18,8 @@ class Parser {
 	List<Stmt> parse() {
 		List<Stmt> statements = new ArrayList<>();
 		while (!isAtEnd()) {
-			statements.add(declaration());
+			Stmt stmt = declaration();
+			if (stmt != null) statements.add(stmt);
 		}
 
 		return statements;
@@ -39,22 +40,25 @@ class Parser {
 	}
 
 	private Stmt statement() {
+		if (match(IF)) return ifStatement();
 		if (match(PRINT)) return printStatement();
 		if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
 		return expressionStatement();
 	}
 
-	private Stmt printStatement() {
-		Expr value = expression();
-		consume(SEMICOLON, "Expect ';' after value.");
-		return new Stmt.Print(value);
-	}
+	private Stmt ifStatement() {
+		consume(LEFT_PAREN, "Expect '(' after 'if'.");
+		Expr condition = expression();
+		consume(RIGHT_PAREN, "Expect ')' after if condition.");
 
-	private Stmt expressionStatement() {
-		Expr expr = expression();
-		consume(SEMICOLON, "Expect ';' after expression.");
-		return new Stmt.Expression(expr);
+		Stmt thenBranch = statement();
+		Stmt elseBranch = null;
+		if (match(ELSE)) {
+			elseBranch = statement();
+		}
+
+		return new Stmt.If(condition, thenBranch, elseBranch);
 	}
 
 	private Stmt varDeclaration() {
@@ -69,11 +73,24 @@ class Parser {
 		return new Stmt.Var(name, initializer);
 	}
 
+	private Stmt printStatement() {
+		Expr value = expression();
+		consume(SEMICOLON, "Expect ';' after value.");
+		return new Stmt.Print(value);
+	}
+
+	private Stmt expressionStatement() {
+		Expr expr = expression();
+		consume(SEMICOLON, "Expect ';' after expression.");
+		return new Stmt.Expression(expr);
+	}
+
 	private List<Stmt> block() {
 		List<Stmt> statements = new ArrayList<>();
 
 		while (!check(RIGHT_BRACE) && !isAtEnd()) {
-			statements.add(declaration());
+			Stmt stmt = declaration();
+			if (stmt != null) statements.add(stmt);
 		}
 
 		consume(RIGHT_BRACE, "Expect '}' after block.");
