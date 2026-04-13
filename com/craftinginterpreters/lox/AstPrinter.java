@@ -1,5 +1,7 @@
 package com.craftinginterpreters.lox;
 
+// Debug helper for printing Expr ASTs.
+
 class AstPrinter implements Expr.Visitor<String> {
 	String print(Expr expr) {
 		return expr.accept(this);
