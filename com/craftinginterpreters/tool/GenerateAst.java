@@ -18,6 +18,7 @@ public class GenerateAst {
 			"Binary   : Expr left, Token operator, Expr right",
 			"Grouping : Expr expression",
 			"Literal  : Object value",
+			"Logical  : Expr left, Token operator, Expr right",
 			"Unary    : Token operator, Expr right",
 			"Variable : Token name"
 		));
@@ -25,8 +26,10 @@ public class GenerateAst {
 		defineAst(outputDir, "Stmt", Arrays.asList(
 			"Block      : List<Stmt> statements",
 			"Expression : Expr expression",
+			"If         : Expr condition, Stmt thenBranch, Stmt elseBranch",
 			"Print      : Expr expression",
-			"Var        : Token name, Expr initializer"
+			"Var        : Token name, Expr initializer",
+			"While      : Expr condition, Stmt body"
 		));
 	}
 
@@ -37,8 +40,19 @@ public class GenerateAst {
 
 		writer.println("package com.craftinginterpreters.lox;");
 		writer.println();
-		writer.println("import java.util.List;");
-		writer.println();
+
+		boolean needsList = false;
+		for (String type : types) {
+			String fields = type.split(":")[1].trim();
+			if (fields.contains("List<")) {
+				needsList = true;
+				break;
+			}
+		}
+		if (needsList) {
+			writer.println("import java.util.List;");
+			writer.println();
+		}
 		writer.println("abstract class " + baseName + " {");
 
 		defineVisitor(writer, baseName, types);
